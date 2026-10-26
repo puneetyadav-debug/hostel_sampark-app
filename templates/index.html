@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Submit a grievance · Hostel Sampark{% endblock %}
+{% block content %}
+<div class="mx-auto grid max-w-5xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
+    <section class="order-2 lg:order-1">
+        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>Student support, made simple</div>
+        <h1 class="max-w-xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">A better hostel starts with <span class="text-indigo-600">being heard.</span></h1>
+        <p class="mt-5 max-w-lg text-base leading-7 text-slate-600">Share a maintenance issue or concern with the hostel team. We’ll create a ticket so you can follow its progress.</p>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2">
+            <a href="{{ url_for('grievance_status') }}" class="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="m16 16 4 4M11 8v3l2 1"/></svg></span>
+                <span class="block text-sm font-semibold text-slate-900">Already submitted?</span><span class="mt-1 block text-xs leading-5 text-slate-500">Use your ticket ID to check the latest status <span class="text-indigo-600 group-hover:translate-x-0.5">→</span></span>
+            </a>
+            <div class="rounded-2xl border border-slate-200 bg-white/70 p-4">
+                <span class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg></span>
+                <span class="block text-sm font-semibold text-slate-900">Your details stay private</span><span class="mt-1 block text-xs leading-5 text-slate-500">Only share the information needed to resolve the issue.</span>
+            </div>
+        </div>
+    </section>
+    <section class="order-1 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8 lg:order-2">
+        <div class="mb-7"><p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">New request</p><h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Tell us what’s going on</h2><p class="mt-2 text-sm leading-6 text-slate-500">Add a clear title and a few details to help us get started.</p></div>
+        <form action="{{ url_for('submit_grievance') }}" method="POST" class="space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div><label for="title" class="mb-1.5 block text-sm font-semibold text-slate-700">Issue title</label><input type="text" id="title" name="title" required maxlength="150" placeholder="e.g. Water leakage in Room 204" class="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"></div>
+            <div><div class="mb-1.5 flex items-center justify-between gap-2"><label for="description" class="block text-sm font-semibold text-slate-700">What happened?</label><span class="text-xs text-slate-400">Be as specific as you can</span></div><textarea id="description" name="description" rows="5" required maxlength="2000" placeholder="Include the location and any details that may help..." class="block w-full resize-y rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm leading-6 text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"></textarea></div>
+            <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200">Submit grievance <span aria-hidden="true">→</span></button>
+            <p class="text-center text-xs text-slate-400">You’ll receive a ticket ID after submission.</p>
+        </form>
+    </section>
+</div>
+{% endblock %}

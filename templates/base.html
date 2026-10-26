@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f8fafc">
+    <title>{% block title %}Hostel Sampark{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/output.css') }}">
+</head>
+<body class="flex min-h-full flex-col bg-gradient-to-b from-indigo-50/70 via-slate-50 to-white font-sans text-slate-900 antialiased">
+    <header class="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+            <a href="{{ url_for('home') }}" class="flex items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm" aria-hidden="true">
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 4l9 6.5M5.5 9v10.5h13V9M9 19.5v-6h6v6"/><path stroke-linecap="round" d="M8 10h.01M16 10h.01"/></svg>
+                </span>
+                <span><span class="block text-base font-bold leading-tight tracking-tight text-slate-900 sm:text-lg">Hostel Sampark</span><span class="hidden text-xs text-slate-500 sm:block">Grievance redressal portal</span></span>
+            </a>
+            <nav aria-label="Main navigation" class="flex flex-wrap items-center gap-1 text-sm font-medium sm:gap-2">
+                <a href="{{ url_for('home') }}" class="rounded-lg px-3 py-2 transition hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'home' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600{% endif %}">Submit</a>
+                <a href="{{ url_for('grievance_status') }}" class="rounded-lg px-3 py-2 transition hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'grievance_status' %}bg-indigo-50 text-indigo-700{% else %}text-slate-600{% endif %}">Track</a>
+                {% if session.get('admin_logged_in') %}
+                    <a href="{{ url_for('admin') }}" class="rounded-lg px-3 py-2 text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Dashboard</a>
+                    <form action="{{ url_for('logout') }}" method="POST" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="rounded-lg px-3 py-2 text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500">Sign out</button></form>
+                {% else %}
+                    <a href="{{ url_for('admin') }}" class="ml-1 rounded-lg border border-slate-200 px-3 py-2 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Staff</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main class="mx-auto w-full max-w-7xl flex-grow px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}<div class="mx-auto mb-6 max-w-5xl space-y-3" aria-live="polite">{% for category, message in messages %}
+            {% if category == 'error' %}<div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert"><span class="font-semibold">Something went wrong. </span>{{ message }}</div>
+            {% elif category == 'success' %}<div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800" role="status"><span class="font-semibold">Success. </span>{{ message }}</div>
+            {% else %}<div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800" role="status">{{ message }}</div>{% endif %}
+          {% endfor %}</div>{% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="mt-12 border-t border-slate-200 bg-white/80">
+        <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-center text-xs text-slate-500 sm:flex-row sm:px-6 sm:text-left lg:px-8">
+            <span>Hostel Sampark · Grievance Redressal System</span><span>© {{ 2026 }} · Your voice helps improve hostel life.</span>
+        </div>
+    </footer>
+</body>
+</html>

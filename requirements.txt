@@ -1,0 +1,5 @@
+Flask
+Flask-WTF
+python-dotenv
+supabase
+gunicorn
