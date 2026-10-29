@@ -2,13 +2,14 @@ import hmac
 import logging
 import os
 import re
+from pathlib import Path
 from typing import Optional
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"), override=False)
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -43,6 +44,11 @@ admin_supabase: Optional[Client] = create_client(url, admin_key) if admin_key el
 ADMIN_PAGE_SIZE = 20
 
 
+def admin_credential_version() -> str:
+    credentials = f"{ADMIN_USERNAME}\0{ADMIN_PASSWORD}".encode()
+    return hmac.new(app.config["SECRET_KEY"].encode(), credentials, "sha256").hexdigest()
+
+
 def parse_ticket_id(value: Optional[str]) -> Optional[int]:
     """Parse the integer identity used by the grievance table."""
     value = (value or "").strip()
@@ -53,27 +59,33 @@ def parse_ticket_id(value: Optional[str]) -> Optional[int]:
 
 
 def is_admin_logged_in():
-    return session.get("admin_logged_in") is True
+    if session.get("admin_logged_in") is not True:
+        return False
+
+    saved_version = session.get("admin_credential_version", "")
+    return hmac.compare_digest(saved_version, admin_credential_version())
 
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("landing.html")
 
 
-@app.route("/submit", methods=["POST"])
+@app.route("/submit", methods=["GET", "POST"])
 def submit_grievance():
+    if request.method == "GET":
+        return render_template("index.html")
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
 
     # Input validation: length limits for both title and description
     if not title or len(title) > 150:
         flash("Title must be between 1 and 150 characters.", "error")
-        return redirect(url_for("home"))
+        return redirect(url_for("submit_grievance"))
         
     if not description or len(description) > 2000:
         flash("Description must be between 1 and 2000 characters.", "error")
-        return redirect(url_for("home"))
+        return redirect(url_for("submit_grievance"))
 
     data = {
         "title": title,
@@ -86,12 +98,12 @@ def submit_grievance():
         grievance = response.data[0] if response.data else None
         if grievance is None:
             flash("The grievance was saved, but its ticket ID could not be returned.", "error")
-            return redirect(url_for("home"))
+            return redirect(url_for("submit_grievance"))
         return render_template("submitted.html", grievance=grievance)
     except Exception:
         logger.exception("Failed to save grievance")
         flash("An error occurred while saving your grievance.", "error")
-        return redirect(url_for("home"))
+        return redirect(url_for("submit_grievance"))
 
 
 @app.route("/status", methods=["GET"])
@@ -111,7 +123,7 @@ def grievance_status():
             try:
                 response = (
                     supabase.table("grievance")
-                    .select("id, status, created_at")
+                    .select("id, title, description, status, created_at")
                     .eq("id", ticket_id)
                     .limit(1)
                     .execute()
@@ -133,6 +145,7 @@ def grievance_status():
     )
 
 
+@app.route("/admin-login", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -142,6 +155,7 @@ def login():
         if hmac.compare_digest(username or "", ADMIN_USERNAME) and hmac.compare_digest(password or "", ADMIN_PASSWORD):
             session.clear()
             session["admin_logged_in"] = True
+            session["admin_credential_version"] = admin_credential_version()
             return redirect(url_for("admin"))
         else:
             flash("Invalid credentials.", "error")
@@ -233,6 +247,43 @@ def update_status():
     except Exception:
         logger.exception("Failed to update grievance status")
         flash("Update failed.", "error")
+
+    return redirect(url_for("admin", page=page))
+
+
+@app.route("/delete-grievance", methods=["POST"])
+def delete_grievance():
+    if not is_admin_logged_in():
+        return redirect(url_for("login"))
+
+    ticket_id = parse_ticket_id(request.form.get("ticket_id"))
+    page = request.form.get("page", default=1, type=int) or 1
+    page = min(max(page, 1), 1_000_000)
+
+    if ticket_id is None:
+        flash("Invalid numeric ticket ID.", "error")
+        return redirect(url_for("admin", page=page))
+
+    if admin_supabase is None:
+        flash("Deleting grievances needs SUPABASE_SECRET_KEY configured on the server.", "error")
+        return redirect(url_for("admin", page=page))
+
+    try:
+        response = (
+            admin_supabase.table("grievance")
+            .delete()
+            .eq("id", ticket_id)
+            .eq("status", "Resolved")
+            .select("id")
+            .execute()
+        )
+        if not response.data:
+            flash("Only resolved grievances can be deleted, and no matching record was found.", "error")
+        else:
+            flash("Resolved grievance deleted.", "success")
+    except Exception:
+        logger.exception("Failed to delete grievance")
+        flash("Delete failed.", "error")
 
     return redirect(url_for("admin", page=page))
 

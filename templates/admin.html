@@ -3,17 +3,17 @@
 {% block title %}Staff dashboard · Hostel Sampark{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl space-y-6">
-    <div class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
+<div class="admin-layout mx-auto max-w-7xl space-y-6">
+    <div class="admin-heading flex flex-col gap-4 border p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <div>
             <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Staff workspace</p>
-            <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Grievance dashboard</h1>
+            <h1 class="display-title mt-2 text-2xl font-bold tracking-tight">Grievance dashboard</h1>
             <p class="mt-2 text-sm text-slate-600">Review student requests and keep each status up to date.</p>
         </div>
     </div>
 
     {% if grievances %}
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="table-card overflow-hidden border shadow-sm">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
                 <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -38,7 +38,7 @@
                             <p class="line-clamp-2">{{ g.description }}</p>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold
+                            <span data-status="{{ g.status }}" class="status-chip px-2.5 py-1 rounded-full text-xs font-semibold
                                 {% if g.status == 'Resolved' %} bg-green-100 text-green-800
                                 {% elif g.status == 'In Progress' %} bg-blue-100 text-blue-800
                                 {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
@@ -50,6 +50,7 @@
                             <form action="{{ url_for('update_status') }}" method="POST" class="flex items-center gap-2">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="ticket_id" value="{{ g.id }}">
+                                <input type="hidden" name="page" value="{{ page }}">
                                 <select name="new_status" class="text-xs border-gray-300 rounded-md border p-1 focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="Pending" {% if g.status == 'Pending' %}selected{% endif %}>Pending</option>
                                     <option value="In Progress" {% if g.status == 'In Progress' %}selected{% endif %}>In Progress</option>
@@ -60,7 +61,15 @@
                                 </button>
                             </form>
                             {% else %}
-                            <span class="text-xs text-gray-400 italic">Completed</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400 italic">Completed</span>
+                                <form action="{{ url_for('delete_grievance') }}" method="POST" onsubmit="return confirm('Permanently delete grievance #{{ g.id }}? This cannot be undone.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="ticket_id" value="{{ g.id }}">
+                                    <input type="hidden" name="page" value="{{ page }}">
+                                    <button type="submit" class="rounded-md border border-rose-200 px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-500" aria-label="Delete resolved grievance {{ g.id }}">Delete</button>
+                                </form>
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
