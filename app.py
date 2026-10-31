@@ -2,6 +2,8 @@ import hmac
 import logging
 import os
 import re
+import hashlib
+import secrets
 from pathlib import Path
 from typing import Optional
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -55,8 +57,6 @@ ADMIN_USERNAME = get_required_setting("ADMIN_USERNAME")
 ADMIN_PASSWORD = get_required_setting("ADMIN_PASSWORD")
 
 supabase_url: str = get_required_setting("SUPABASE_URL")
-supabase_key: str = get_required_setting("SUPABASE_KEY")
-grievance_database: Client = create_client(supabase_url, supabase_key)
 admin_database_key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
 admin_database: Optional[Client] = create_client(supabase_url, admin_database_key) if admin_database_key else None
 ADMIN_PAGE_SIZE = 20
@@ -105,63 +105,83 @@ def submit_grievance():
         flash("Description must be between 1 and 2000 characters.", "error")
         return redirect(url_for("submit_grievance"))
 
+    if admin_database is None:
+        flash("Grievance submission needs SUPABASE_SECRET_KEY configured on the server.", "error")
+        return redirect(url_for("submit_grievance"))
+    
+    lookup_code = secrets.token_urlsafe(32)
+    lookup_token_hash = hashlib.sha256(
+        lookup_code.encode("utf-8")
+    ).hexdigest()
+    
     data = {
         "title": title,
         "description": description,
-        "status": "Pending"
+        "status": "Pending",
+        "lookup_token_hash": lookup_token_hash,
     }
 
     try:
-        database_result = grievance_database.table("grievance").insert(data).execute()
+        database_result = admin_database.table("grievance").insert(data).execute()
         grievance = database_result.data[0] if database_result.data else None
         if grievance is None:
             flash("The grievance was saved, but its ticket ID could not be returned.", "error")
             return redirect(url_for("submit_grievance"))
-        return render_template("submitted.html", grievance=grievance)
+        # The template needs the submitted details and ID, never the verifier.
+        grievance.pop("lookup_token_hash", None)
+        return render_template("submitted.html", grievance=grievance, lookup_code=lookup_code)
     except Exception:
         logger.exception("Failed to save grievance")
         flash("An error occurred while saving your grievance.", "error")
         return redirect(url_for("submit_grievance"))
 
 
-@app.route("/status", methods=["GET"])
+@app.route("/status", methods=["GET", "POST"])
 def grievance_status():
-    searched_id = request.args.get("ticket_id", "").strip()
-    searched = "ticket_id" in request.args
+    searched = request.method == "POST"
+    searched_id = request.form.get("ticket_id", "").strip() if searched else ""
+    lookup_code = request.form.get("lookup_code", "").strip() if searched else ""
+
     grievance = None
-    invalid_ticket_id = False
+    invalid_lookup = False
     lookup_failed = False
 
     if searched:
         ticket_id = parse_ticket_id(searched_id)
-        if ticket_id is None:
-            invalid_ticket_id = True
-            flash("Enter a valid numeric ticket ID.", "error")
+
+        if ticket_id is None or not lookup_code:
+            invalid_lookup = True
+        elif admin_database is None:
+            lookup_failed = True
+            flash("Private grievance lookup is not configured. Contact the administrator.", "error")
         else:
+            lookup_token_hash = hashlib.sha256(
+                lookup_code.encode("utf-8")
+            ).hexdigest()
+
             try:
                 database_result = (
-                    grievance_database.table("grievance")
+                    admin_database.table("grievance")
                     .select("id, title, description, status, created_at")
                     .eq("id", ticket_id)
+                    .eq("lookup_token_hash", lookup_token_hash)
                     .limit(1)
                     .execute()
                 )
-                if database_result.data:
-                    grievance = database_result.data[0]
+                grievance = database_result.data[0] if database_result.data else None
+                invalid_lookup = grievance is None
             except Exception:
                 lookup_failed = True
-                logger.exception("Failed to look up grievance status")
-                flash("Database communication error.", "error")
+                logger.exception("Failed to look up grievance")
 
     return render_template(
         "status.html",
         searched=searched,
         searched_id=searched_id,
         grievance=grievance,
-        invalid_ticket_id=invalid_ticket_id,
+        invalid_ticket_id=invalid_lookup,
         lookup_failed=lookup_failed,
     )
-
 
 @app.route("/admin-login", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
@@ -204,7 +224,7 @@ def admin():
             offset = (page - 1) * ADMIN_PAGE_SIZE
             database_result = (
                 admin_database.table("grievance")
-                .select("*")
+                .select("id, title, description, status, created_at")
                 .order("created_at", desc=True)
                 .order("id", desc=True)
                 .range(offset, offset + ADMIN_PAGE_SIZE)

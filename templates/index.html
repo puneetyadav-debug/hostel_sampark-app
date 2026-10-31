@@ -3,15 +3,17 @@
 {% block content %}
 <div class="mx-auto max-w-2xl px-1 sm:px-2">
     <section class="form-panel rounded-3xl border p-6 shadow-xl sm:p-8">
-        <div class="form-heading mb-7"><p class="eyebrow text-xs font-bold uppercase tracking-[0.18em]">New request</p><h1 class="display-title mt-2 text-2xl font-bold tracking-tight">What is the issue?</h1></div>
+        <div class="form-heading mb-7"><p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">New request</p><h1 class="display-title mt-2 text-2xl font-bold tracking-tight">What is the issue?</h1></div>
         <form action="{{ url_for('submit_grievance') }}" method="POST" class="entry-form space-y-5">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div><label for="title" class="field-label mb-1.5 block text-sm font-semibold">Issue title</label><input type="text" id="title" name="title" required maxlength="150" placeholder="Keep it brief." class="text-field block w-full rounded-xl border px-3.5 py-3 text-sm shadow-sm focus:outline-none focus:ring-4"></div>
             <div><label for="description" class="field-label mb-1.5 block text-sm font-semibold">Detailed description</label><textarea id="description" name="description" rows="5" required maxlength="2000" placeholder="Include any details that may help..." class="text-field block w-full resize-y rounded-xl border px-3.5 py-3 text-sm leading-6 shadow-sm focus:outline-none focus:ring-4"></textarea></div>
-            <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200">Submit grievance <span aria-hidden="true">→</span></button>
-            <p class="helper-text text-center text-xs">You’ll receive a ticket ID after submission.</p>
+            <button type="submit" class="button-primary w-fit mx-auto block rounded-lg px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4">
+            Submit grievance
+        </button>
+            <p class="helper-text text-center text-xs">You’ll receive a Ticket ID & Private Code after submission.</p>
         </form>
-        <div class="mt-5 text-center"> Already submitted ? <a href="{{ url_for('grievance_status') }}" class="button-secondary inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition">Track a grievance</a></div>
+        <div class="mt-5 text-center"> Already submitted? <a href="{{ url_for('grievance_status') }}" class="button-secondary inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition">Track a grievance</a></div>
     </section>
 </div>
 {% endblock %}

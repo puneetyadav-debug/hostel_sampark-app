@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "watch:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/dist/output.css --watch",
-  "build:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/dist/output.css --minify"
-},
+    "watch:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/dist/output.css --watch",
+    "build:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/dist/output.css --minify"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

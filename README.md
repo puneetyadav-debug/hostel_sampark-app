@@ -1,4 +1,4 @@
-# Hostel Sampark
+﻿# Hostel Sampark
 
 A Flask app for submitting, tracking, and managing hostel grievances.
 
@@ -21,19 +21,20 @@ A Flask app for submitting, tracking, and managing hostel grievances.
    ADMIN_USERNAME=your-admin-name
    ADMIN_PASSWORD=your-admin-password
    SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_KEY=your-supabase-client-key
    SUPABASE_SECRET_KEY=your-supabase-server-secret
    ```
 
-   `SUPABASE_SECRET_KEY` is needed for the admin dashboard to list, update, and delete grievances. Keep `.env` private and never commit it.
+   `SUPABASE_SECRET_KEY` is used by the Flask server for grievance submissions, private ticket lookups, and admin actions. Keep it server-side in `.env` and never put it in a template or commit it.
 
-4. Start the app:
+4. In the Supabase SQL Editor, run the SQL files in `supabase/migrations/` in filename order. The first adds the private-code verifier column; the second enables Row Level Security and removes direct table permissions from the `anon` and `authenticated` roles. The Flask server uses `SUPABASE_SECRET_KEY` to access the table.
+
+5. Start the app:
 
    ```sh
    python app.py
    ```
 
-5. Open <http://127.0.0.1:5000> in the Mac browser.
+6. Open <http://127.0.0.1:5000> in the browser.
 
 If the error says a setting is not set in the environment, add that exact name to `.env`. If Python reports a missing module, activate `venv` and install `requirements.txt` again. For a database connection error, verify the Supabase URL/key and that the project is reachable.
 

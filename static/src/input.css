@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@custom-variant dark (&:where(.dark, .dark *));
 @theme {
   --color-slate-50: #f7f5ee;
   --color-slate-100: #efede3;
@@ -84,6 +84,28 @@ html { background: var(--paper); }
 .site-nav .nav-link.is-current { box-shadow: inset 0 -2px var(--pine); }
 .site-nav .nav-login { border-color: #c6d0c3; }
 .site-nav .signout-link:hover { color: #9a4e39; background: #f8ece5; }
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.theme-icon-moon {
+  display: none;
+}
+
+html.dark .theme-icon-sun {
+  display: none;
+}
+
+html.dark .theme-icon-moon {
+  display: block;
+}
 
 .page-shell { padding-top: clamp(1.25rem, 3vw, 2.8rem); padding-bottom: clamp(1.5rem, 4vw, 3.5rem); }
 .site-footer {
@@ -171,6 +193,8 @@ html { background: var(--paper); }
 .card-heading { border-color: #e8e5da; background: #f1f2e9; }
 .card-heading .eyebrow { border: 0; }
 .card-content { color: var(--ink); }
+.grievance-description { color: var(--ink); }
+.grievance-ticket-id { color: var(--ink); }
 .lookup-form { padding-bottom: .3rem; }
 .result-block { padding-top: .1rem; }
 .result-block > div:first-child { color: var(--ink); }
@@ -215,3 +239,103 @@ html { background: var(--paper); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Dark theme: these values override the light theme tokens above on <html>. */
+html.dark {
+  color-scheme: dark;
+  --ink: #edf2e9;
+  --muted: #b2bdaf;
+  --pine: #8dbb97;
+  --pine-dark: #a6cbaa;
+  --paper: #17211b;
+  --panel: #222e26;
+  --line: #3d4c41;
+  --rust: #d98b70;
+  --gold: #e0bd78;
+  --soft-shadow: 0 18px 45px rgba(0, 0, 0, .24);
+}
+
+html.dark,
+html.dark .site-body {
+  background-color: var(--paper);
+  background-image: radial-gradient(ellipse at 90% 4%, rgba(215, 173, 96, .07), transparent 27rem), linear-gradient(145deg, #1b2720 0%, #141d17 100%);
+  background-attachment: fixed;
+}
+
+html.dark .site-header,
+html.dark .site-footer {
+  border-color: #35453a;
+  background: rgba(25, 37, 29, .95);
+}
+
+html.dark .site-nav .nav-link { color: #c2cebf; }
+html.dark .site-nav .nav-link:hover,
+html.dark .site-nav .nav-link.is-current { color: #e8f1e5; background: #2c3c32; }
+html.dark .site-nav .nav-link.is-current { box-shadow: inset 0 -2px #8dbb97; }
+html.dark .site-nav .nav-login { border-color: #526555; }
+html.dark .site-nav .signout-link:hover { color: #ffc2aa; background: #49342d; }
+
+html.dark .info-card,
+html.dark .form-panel,
+html.dark .content-card,
+html.dark .admin-heading,
+html.dark .table-card {
+  border-color: var(--line);
+  background-color: var(--panel);
+  color: var(--ink);
+}
+
+html.dark .info-card:hover { border-color: #67846d; background: #29392e; }
+html.dark .info-card span.text-slate-900,
+html.dark .info-card span.block.text-sm,
+html.dark .display-title,
+html.dark .card-content { color: var(--ink); }
+html.dark .info-card span.text-slate-500,
+html.dark .info-card span.block.text-xs,
+html.dark .lead,
+html.dark .site-footer { color: var(--muted); }
+html.dark .display-title span,
+html.dark .ticket-number { color: var(--pine); }
+html.dark .eyebrow { color: #b2d5b5; border-color: #405947; background: #29392e; }
+html.dark .form-heading,
+html.dark .card-heading { border-color: var(--line); }
+html.dark .card-heading,
+html.dark .result-block > div:last-child { background: #29372d; }
+html.dark .field-label { color: #d6e0d2; }
+html.dark .helper-text { color: #aeb6a7; }
+html.dark .text-field,
+html.dark .table-card select {
+  color: var(--ink);
+  border-color: #526253;
+  background: #1b2820;
+}
+html.dark .text-field::placeholder { color: #879387; }
+html.dark .text-field:focus { border-color: var(--pine); background: #202e24; }
+html.dark .button-secondary { color: #d7e0d3; border-color: #4d5b4e; background: #2c392e; }
+html.dark .button-secondary:hover { color: #eef5eb; background: #37483a; }
+html.dark .button-primary { color: #142018; border-color: #8dbb97; background: #8dbb97; }
+html.dark .button-primary:hover { border-color: #a6cbaa; background: #a6cbaa; }
+html.dark .ticket-receipt { border-color: #5a523d; background: #302d22; }
+
+html.dark .table-card thead { color: #d0ddce; background: #2c3a30; }
+html.dark .table-card th,
+html.dark .table-card td { border-color: #3a493d; }
+html.dark .table-card tbody tr:hover { background: #2b392e; }
+html.dark .table-card td { color: #c5d0c2; }
+html.dark .table-card td:first-child { color: #a6cbaa; }
+html.dark .admin-layout > div:last-child:not(.table-card) { border-color: #465448; background: rgba(34, 46, 38, .8); }
+
+/* Some templates use Tailwind's light palette directly; adjust those too. */
+html.dark .text-slate-900,
+html.dark .text-gray-900 { color: #edf2e9; }
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-gray-900 { color: #edf2e9; }
+html.dark .text-gray-700,
+html.dark .text-slate-500,
+html.dark .text-gray-500,
+html.dark .text-gray-400 { color: #aeb9aa; }
+html.dark .bg-white,
+html.dark .bg-slate-50 { background-color: #222e26; }
+html.dark .border-slate-200,
+html.dark .border-gray-200 { border-color: #3d4c41; }

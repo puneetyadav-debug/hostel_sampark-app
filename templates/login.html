@@ -5,9 +5,7 @@
 {% block content %}
 <div class="content-card login-card mx-auto max-w-md rounded-2xl border p-6 shadow-xl sm:p-8">
     <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Staff access</p>
-    <h1 class="display-title mt-2 text-2xl font-bold tracking-tight">Admin sign in</h1>
-    <p class="mb-6 mt-2 text-sm leading-6 text-slate-600">Sign in to review grievances and update their status.</p>
-
+    <h1 class="display-title mt-2 mb-5 text-2xl font-bold tracking-tight">Admin sign in</h1>
     <form action="/admin-login" method="POST" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -23,10 +21,12 @@
                 autocomplete="current-password" class="text-field block w-full rounded-lg border p-3 text-sm shadow-sm focus:outline-none focus:ring-4">
         </div>
 
-        <button type="submit" class="button-primary w-full rounded-lg px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4">
-            Sign in to admin dashboard
+        <button type="submit" class="button-primary w-fit mx-auto block rounded-lg px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4">
+            Sign-in
         </button>
     </form>
-    <a href="{{ url_for('submit_grievance') }}" class="mt-5 block text-center text-sm font-medium text-slate-500 hover:text-indigo-700">Back to submission page</a>
+    <div class="mt-4 flex justify-center">
+    <a href="{{ url_for('submit_grievance') }}" class="button-secondary inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition">Back to submission page</a>
+    </div>
 </div>
 {% endblock %}
