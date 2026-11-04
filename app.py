@@ -10,11 +10,20 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"), override=False)
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=[],
+)
 
 def get_required_setting(name: str) -> str:
     value = os.getenv(name, "").strip()
@@ -83,6 +92,17 @@ def is_admin_logged_in():
     saved_version = session.get("admin_credential_version", "")
     return hmac.compare_digest(saved_version, admin_credential_version())
 
+@app.template_filter("local_datetime")
+def format_local_datetime(value):
+    if not value:
+        return "Not available"
+
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+    return value.astimezone(ZoneInfo("Asia/Kolkata")).strftime(
+        "%d %b %Y, %I:%M %p"
+    )
 
 @app.route("/")
 def home():
@@ -162,7 +182,7 @@ def grievance_status():
             try:
                 database_result = (
                     admin_database.table("grievance")
-                    .select("id, title, description, status, created_at")
+                    .select("id, title, description, status, created_at, updated_at")
                     .eq("id", ticket_id)
                     .eq("lookup_token_hash", lookup_token_hash)
                     .limit(1)
@@ -185,6 +205,7 @@ def grievance_status():
 
 @app.route("/admin-login", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("100 per 15 minutes")
 def login():
     if request.method == "POST":
         username = request.form.get("username")
@@ -224,7 +245,7 @@ def admin():
             offset = (page - 1) * ADMIN_PAGE_SIZE
             database_result = (
                 admin_database.table("grievance")
-                .select("id, title, description, status, created_at")
+                .select("id, title, description, status, created_at, updated_at")
                 .order("created_at", desc=True)
                 .order("id", desc=True)
                 .range(offset, offset + ADMIN_PAGE_SIZE)
@@ -273,7 +294,7 @@ def update_status():
     try:
         database_result = (
             admin_database.table("grievance")
-            .update({"status": new_status})
+            .update({"status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()})
             .eq("id", ticket_id)
             .select("id")
             .execute()

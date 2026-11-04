@@ -26,7 +26,12 @@ A Flask app for submitting, tracking, and managing hostel grievances.
 
    `SUPABASE_SECRET_KEY` is used by the Flask server for grievance submissions, private ticket lookups, and admin actions. Keep it server-side in `.env` and never put it in a template or commit it.
 
-4. In the Supabase SQL Editor, run the SQL files in `supabase/migrations/` in filename order. The first adds the private-code verifier column; the second enables Row Level Security and removes direct table permissions from the `anon` and `authenticated` roles. The Flask server uses `SUPABASE_SECRET_KEY` to access the table.
+4. In the Supabase SQL Editor, apply these migrations in this exact order:
+
+   1. `supabase/migrations/20261031_add_lookup_token_hash.sql` adds the private-code verifier column.
+   2. `supabase/migrations/20261031_lock_grievance_to_server.sql` enables Row Level Security and removes direct table permissions from the `anon` and `authenticated` roles.
+
+   These migrations update an existing `public.grievance` table; create that table first if your Supabase project does not already have it. The Flask server uses `SUPABASE_SECRET_KEY` to access the table.
 
 5. Start the app:
 

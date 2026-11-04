@@ -5,7 +5,7 @@
 {% block content %}
 <div class="content-card status-card mx-auto max-w-2xl overflow-hidden rounded-3xl border shadow-xl">
   <div class="card-heading border-b p-6 sm:p-8">
-    <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Status Lookup</p>
+    <p class="eyebrow text-xs font-bold uppercase tracking-[0.18em]">Status Lookup</p>
     <h1 class="display-title mt-2 mb-5 text-2xl font-bold tracking-tight">Track your grievance</h1>
     <p class="mt-2 max-w-lg text-sm leading-6 text-slate-600">Enter the Ticket ID and Private Code you received after submitting your request.</p>
   </div>
@@ -58,7 +58,11 @@
 
     {% if searched %}
         <hr class="my-6 border-slate-200">
-        {% if grievance %}
+        {% if lookup_failed %}
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-900" role="alert">
+                We couldn't check your grievance right now because the lookup service is unavailable. Please try again later.
+            </div>
+        {% elif grievance %}
             <div class="result-block space-y-4" aria-live="polite">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-gray-900">Grievance Details</h3>
@@ -87,6 +91,14 @@
                         <p class="grievance-description whitespace-pre-line font-sans font-normal">{{ grievance.description }}</p>
                     </div>
                     {% endif %}
+                    <div>
+                        <span class="text-xs text-gray-500 block">Submitted</span>
+                        <span class="text-gray-900 font-medium">{{ grievance.created_at | local_datetime }}</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500 block">Last updated</span>
+                        <span class="text-gray-900 font-medium">{{ grievance.updated_at | local_datetime }}</span>
+                    </div>
                 </div>
             </div>
         {% else %}

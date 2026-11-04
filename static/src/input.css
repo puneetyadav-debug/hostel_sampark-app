@@ -296,7 +296,7 @@ html.dark .lead,
 html.dark .site-footer { color: var(--muted); }
 html.dark .display-title span,
 html.dark .ticket-number { color: var(--pine); }
-html.dark .eyebrow { color: #b2d5b5; border-color: #405947; background: #29392e; }
+html.dark .eyebrow { color: #b5e3bf; border-color: #405947; background: #29392e; }
 html.dark .form-heading,
 html.dark .card-heading { border-color: var(--line); }
 html.dark .card-heading,

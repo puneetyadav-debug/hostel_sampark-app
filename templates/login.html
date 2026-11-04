@@ -3,9 +3,12 @@
 {% block title %}Admin Login · Hostel Sampark{% endblock %}
 
 {% block content %}
-<div class="content-card login-card mx-auto max-w-md rounded-2xl border p-6 shadow-xl sm:p-8">
-    <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Staff access</p>
+<div class="content-card mx-auto max-w-2xl overflow-hidden rounded-3xl border shadow-xl">
+  <div class="card-heading border-b p-6 sm:p-8">
+    <p class="eyebrow text-xs font-bold uppercase tracking-[0.18em]">Staff access</p>
     <h1 class="display-title mt-2 mb-5 text-2xl font-bold tracking-tight">Admin sign in</h1>
+  </div>
+  <div class="card-content p-6 sm:p-8">
     <form action="/admin-login" method="POST" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -25,8 +28,9 @@
             Sign-in
         </button>
     </form>
-    <div class="mt-4 flex justify-center">
+    <div class="mt-5 flex justify-center">
     <a href="{{ url_for('submit_grievance') }}" class="button-secondary inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition">Back to submission page</a>
     </div>
+  </div>
 </div>
 {% endblock %}

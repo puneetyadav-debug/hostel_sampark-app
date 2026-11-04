@@ -20,6 +20,8 @@
                         <th scope="col" class="px-6 py-3">Title</th>
                         <th scope="col" class="px-6 py-3">Description</th>
                         <th scope="col" class="px-6 py-3">Status</th>
+                        <th scope="col" class="px-6 py-3">Submission date</th>
+                        <th scope="col" class="px-6 py-3">Last updated date</th>
                         <th scope="col" class="px-6 py-3">Action</th>
                     </tr>
                 </thead>
@@ -33,7 +35,7 @@
                             {{ grievance.title }}
                         </td>
                         <td class="px-6 py-4 text-gray-600 max-w-sm">
-                            <p class="line-clamp-2">{{ grievance.description }}</p>
+                            <p class="whitespace-pre-line break-words">{{ grievance.description }}</p>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span data-status="{{ grievance.status }}" class="status-chip px-2.5 py-1 rounded-full text-xs font-semibold
@@ -41,6 +43,16 @@
                                 {% elif grievance.status == 'In Progress' %} bg-blue-100 text-blue-800
                                 {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
                                 {{ grievance.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-xs text-gray-500">
+                                {{ grievance.created_at | local_datetime }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-xs text-gray-500">
+                                {{ grievance.updated_at | local_datetime }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -61,12 +73,6 @@
                             {% else %}
                             <div class="flex items-center gap-3">
                                 <span class="text-xs text-gray-400 italic">Completed</span>
-                                <form action="{{ url_for('delete_grievance') }}" method="POST" onsubmit="return confirm('Permanently delete grievance #{{ grievance.id }}? This cannot be undone.');">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="ticket_id" value="{{ grievance.id }}">
-                                    <input type="hidden" name="page" value="{{ page }}">
-                                    <button type="submit" class="rounded-md border border-rose-200 px-3 py-1 text-xs font-medium text-rose-700 transition hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-500" aria-label="Delete resolved grievance {{ grievance.id }}">Delete</button>
-                                </form>
                             </div>
                             {% endif %}
                         </td>
@@ -76,6 +82,20 @@
             </table>
         </div>
     </div>
+
+    <nav class="flex items-center justify-between" aria-label="Grievance pages">
+        {% if page > 1 %}
+        <a href="{{ url_for('admin', page=page - 1) }}" class="button-secondary rounded-lg px-4 py-2 text-sm font-semibold">Previous</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+        <span class="text-sm text-slate-500">Page {{ page }}</span>
+        {% if has_next_page %}
+        <a href="{{ url_for('admin', page=page + 1) }}" class="button-secondary rounded-lg px-4 py-2 text-sm font-semibold">Next</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+    </nav>
     {% else %}
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
         <p class="text-sm font-medium text-slate-700">No grievances yet</p><p class="mt-1 text-sm text-slate-500">New submissions will appear here.</p>

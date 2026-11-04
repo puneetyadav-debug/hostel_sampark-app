@@ -3,3 +3,5 @@ Flask-WTF
 python-dotenv
 supabase
 gunicorn
+Flask-Limiter
+tzdata
