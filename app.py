@@ -106,16 +106,97 @@ def format_local_datetime(value):
 
 @app.route("/")
 def home():
-    return render_template("landing.html")
+    settings = {
+        "hostels": "Saramati, Aravali, Geetanjali",
+        "announcement": "Welcome to Hostel Sampark!",
+        "portal_open": "true",
+    }
 
+    if admin_database is not None:
+        try:
+            result = (
+                admin_database.table("app_settings")
+                .select("key, value")
+                .execute()
+            )
 
+            for row in result.data or []:
+                if row["key"] in settings:
+                    settings[row["key"]] = row["value"]
+
+        except Exception:
+            logger.exception("Failed to load public settings")
+
+    return render_template("landing.html", settings=settings)
+
+def is_portal_open():
+    if admin_database is None:
+        return True
+
+    try:
+        result = (
+            admin_database.table("app_settings")
+            .select("value")
+            .eq("key", "portal_open")
+            .limit(1)
+            .execute()
+        )
+        rows = result.data or []
+
+        # If no setting exists, keep the portal open by default.
+        if not rows:
+            return True
+
+        return rows[0]["value"].strip().lower() == "true"
+
+    except Exception:
+        logger.exception("Failed to check portal status")
+        # Keep submissions available if the status can't be checked.
+        return True
+
+def get_configured_hostels():
+    default_hostels = ["Saramati", "Aravali", "Geetanjali"]
+
+    if admin_database is None:
+        return default_hostels
+
+    try:
+        result = (
+            admin_database.table("app_settings")
+            .select("value")
+            .eq("key", "hostels")
+            .limit(1)
+            .execute()
+        )
+
+        rows = result.data or []
+        if not rows:
+            return default_hostels
+
+        hostels = [
+            name.strip()
+            for name in rows[0]["value"].split(",")
+            if name.strip()
+        ]
+        return hostels or default_hostels
+
+    except Exception:
+        logger.exception("Failed to load configured hostels")
+        return default_hostels
+    
 @app.route("/submit", methods=["GET", "POST"])
 def submit_grievance():
+    if not is_portal_open():
+        flash("Grievance submissions are currently closed.", "error")
+        return redirect(url_for("home"))
     if request.method == "GET":
-        return render_template("index.html")
+        return render_template("index.html",hostels=get_configured_hostels())
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
-
+    hostel = request.form.get("hostel", "").strip()
+    if hostel not in get_configured_hostels():
+        flash("Choose a valid hostel from the list.", "error")
+        return redirect(url_for("submit_grievance"))
     # Input validation: length limits for both title and description
     if not title or len(title) > 150:
         flash("Title must be between 1 and 150 characters.", "error")
@@ -267,6 +348,54 @@ def admin():
         has_next_page=has_next_page,
     )
 
+@app.route("/admin/settings", methods=["GET", "POST"])
+def admin_settings():
+    if not is_admin_logged_in():
+        return redirect(url_for("login"))
+
+    if admin_database is None:
+        flash("Admin settings need SUPABASE_SECRET_KEY configured on the server.", "error")
+        return redirect(url_for("admin"))
+
+    setting_keys = ("hostels", "announcement", "portal_open")
+
+    try:
+        if request.method == "POST":
+            # Read the submitted form values.
+            values = {
+                "hostels": request.form.get("hostels", "").strip(),
+                "announcement": request.form.get("announcement", "").strip(),
+                "portal_open": "true" if request.form.get("portal_open") == "true" else "false",
+            }
+
+            # Update each existing setting row in Supabase.
+            for key in setting_keys:
+                admin_database.table("app_settings").update(
+                    {"value": values[key], "updated_at": datetime.now(timezone.utc).isoformat()}
+                ).eq("key", key).execute()
+
+            flash("Settings updated successfully!", "success")
+            return redirect(url_for("admin_settings"))
+
+        # Load the current settings to fill in the form.
+        result = (
+            admin_database.table("app_settings")
+            .select("key, value")
+            .execute()
+        )
+        settings = {row["key"]: row["value"] for row in (result.data or [])}
+
+        # Provide defaults if a row is missing.
+        settings.setdefault("hostels", "")
+        settings.setdefault("announcement", "")
+        settings.setdefault("portal_open", "true")
+
+        return render_template("admin_settings.html", settings=settings)
+
+    except Exception:
+        logger.exception("Failed to load or save admin settings")
+        flash("Could not load or save settings. Check the server key and database access.", "error")
+        return redirect(url_for("admin"))
 
 @app.route("/update-status", methods=["POST"])
 def update_status():

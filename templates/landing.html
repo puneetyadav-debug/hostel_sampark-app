@@ -1,22 +1,102 @@
 {% extends "base.html" %}
 {% block title %}Hostel Sampark · Grievance support{% endblock %}
 {% block content %}
-<section class="home-layout mx-auto grid max-w-5xl items-center gap-8 px-1 sm:px-2 lg:grid-cols-2 lg:gap-12">
-    <div class="home-intro">
-        <h1 class="display-title max-w-xl text-4xl font-bold tracking-tight sm:text-5xl">Hostel life,<br><span>Hassle free.</span></h1>
-        <h3 class="mt-6 space-y-5 text-sm leading-6 text-slate-600">Saramati Hostel • Aravali Hostel • Geetanjali Hostel</h3>
-        <div class="mt-7 flex flex-wrap gap-3">
-            <a href="{{ url_for('submit_grievance') }}" class="button-primary rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition">Submit grievance</a>
-            <a href="{{ url_for('grievance_status') }}" class="button-secondary rounded-xl px-5 py-3 text-sm font-semibold transition">Track grievance</a>
+<section class="home-layout mx-auto grid max-w-6xl items-center gap-10 px-2 sm:px-4 lg:grid-cols-12 lg:gap-14">
+    <!-- Left Hero Section -->
+    <div class="home-intro lg:col-span-7">
+        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Official Student Redressal Portal
+        </div>
+        
+        <h1 class="display-title text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+            Hostel life,<br>
+            <span>Hassle free.</span>
+        </h1>
+
+        {% for hostel in settings.hostels.split(',') %}
+            <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200">
+                {{ hostel.strip() }}
+            </span>
+        {% endfor %}
+
+    {% if settings.announcement %}
+    <div class="mt-5 rounded-xl border border-emerald-800/40 bg-emerald-950/30 p-4 sm:max-w-xl"
+        role="status">
+        <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">
+            Hostel announcement
+        </p>
+        <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-200">
+                {{ settings.announcement }}
+        </p>
+    </div>
+    {% endif %}
+
+        <!-- Action buttons -->
+        <div class="mt-8 flex flex-wrap items-center gap-3.5">
+            <a href="{{ url_for('submit_grievance') }}" class="button-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-md transition">
+                <span>Submit a grievance</span>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+            </a>
+            <a href="{{ url_for('grievance_status') }}" class="button-secondary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition">
+                <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span>Track grievance</span>
+            </a>
         </div>
     </div>
-    <section class="content-card rounded-2xl border p-6 shadow-xl sm:p-8" aria-label="How Hostel Sampark works">
-        <h2 class="display-title text-2xl font-bold">How it works</h2>
-        <ol class="mt-6 space-y-5 text-sm leading-6 text-slate-600">
-            <li><strong class="text-slate-900">1. Tell us what needs attention.</strong><br>Describe your issue or concern.</li>
-            <li><strong class="text-slate-900">2. Save your generated Ticket ID & Private Code.</strong><br>Confidentiality is maintained at all times.</li>
-            <li><strong class="text-slate-900">3. Track the update.</strong><br>Hostel staff review requests and update their progress.</li>
-        </ol>
-    </section>
+
+    <!-- Right "How it works" Card -->
+    <div class="lg:col-span-5">
+        <section class="content-card rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-xl backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-800/90 sm:p-8" aria-label="How Hostel Sampark works">
+            <div class="flex items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-700/70">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">How it works</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Simple 3-step resolution process</p>
+                </div>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                </div>
+            </div>
+
+            <div class="mt-6 space-y-6">
+                <!-- Step 1 -->
+                <div class="flex items-start gap-4">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 font-mono text-xs font-bold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                        01
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Tell us what needs attention</h3>
+                        <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Describe the issue clearly with its title and room/hostel details.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="flex items-start gap-4">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 font-mono text-xs font-bold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                        02
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Save Ticket ID & Private Code</h3>
+                        <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">A secure, private code is generated for complete confidentiality.</p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="flex items-start gap-4">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 font-mono text-xs font-bold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                        03
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Track the resolution</h3>
+                        <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Hostel staff update the status in real-time until it is resolved.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-7 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 text-center text-xs text-slate-500 dark:border-slate-700/50 dark:bg-slate-900/40 dark:text-slate-400">
+                🔒 No account needed to submit or track your request.
+            </div>
+        </section>
+    </div>
 </section>
 {% endblock %}

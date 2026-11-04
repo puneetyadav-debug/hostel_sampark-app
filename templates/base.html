@@ -39,6 +39,10 @@
                 {% if session.get('admin_logged_in') %}
                     <a href="{{ url_for('home') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">Home</a>
                     <a href="{{ url_for('admin') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">Dashboard</a>
+                    <a href="{{ url_for('admin_settings') }}"
+                        class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'admin_settings' %}is-current{% endif %}">
+                        Settings        
+                    </a>
                     <form action="{{ url_for('logout') }}" method="POST" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="nav-link signout-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-rose-500">Sign out</button></form>
                 {% else %}
                     <a href="{{ url_for('home') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'home' %}is-current{% endif %}">Home</a>
