@@ -1,0 +1,2 @@
+alter table public.grievance
+add column if not exists hostel text;

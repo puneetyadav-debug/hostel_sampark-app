@@ -20,8 +20,14 @@
 
         <div>
             <label for="password" class="field-label mb-1 block text-sm font-medium">Password</label>
-            <input type="password" id="password" name="password" required
-                autocomplete="current-password" class="text-field block w-full rounded-lg border p-3 text-sm shadow-sm focus:outline-none focus:ring-4">
+            <div class="password-field-wrap">
+                <input type="password" id="password" name="password" required
+                    autocomplete="current-password" class="text-field block w-full rounded-lg border p-3 pr-12 text-sm shadow-sm focus:outline-none focus:ring-4">
+                <button type="button" id="password-visibility-toggle" class="password-visibility-toggle" aria-label="Show password" aria-pressed="false">
+                    <svg class="password-eye-open" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="password-eye-closed" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6 0 9.5 7 9.5 7a15.7 15.7 0 0 1-3.1 4.1M6.2 6.2C3.8 7.8 2.5 12 2.5 12s3.5 7 9.5 7c1 0 1.9-.2 2.8-.5"/></svg>
+                </button>
+            </div>
         </div>
 
         <button type="submit" class="button-primary w-fit mx-auto block rounded-lg px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4">
@@ -33,4 +39,16 @@
     </div>
   </div>
 </div>
+<script>
+    const passwordInput = document.getElementById("password");
+    const passwordVisibilityToggle = document.getElementById("password-visibility-toggle");
+
+    passwordVisibilityToggle.addEventListener("click", () => {
+        const showPassword = passwordInput.type === "password";
+        passwordInput.type = showPassword ? "text" : "password";
+        passwordVisibilityToggle.setAttribute("aria-pressed", String(showPassword));
+        passwordVisibilityToggle.setAttribute("aria-label", showPassword ? "Hide password" : "Show password");
+        passwordVisibilityToggle.classList.toggle("is-visible", showPassword);
+    });
+</script>
 {% endblock %}

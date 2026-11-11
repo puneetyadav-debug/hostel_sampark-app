@@ -79,16 +79,32 @@
                         <span class="text-xs text-gray-500 block">Ticket ID</span>
                         <code class="grievance-ticket-id font-mono font-semibold">{{ grievance.id }}</code>
                     </div>
+                    {% if grievance.hostel %}
+                    <div>
+                        <span class="text-xs text-gray-500 block">Hostel</span>
+                        <span class="text-gray-900 font-medium">{{ grievance.hostel }}</span>
+                    </div>
+                    {% endif %}
                     {% if grievance.title %}
                     <div>
-                        <span class="text-xs text-gray-500 block"></span>
+                        <span class="text-xs text-gray-500 block">Title</span>
                         <p class="text-gray-900 font-medium">{{ grievance.title }}</p>
                     </div>
                     {% endif %}
+                    <div>
+                        <span class="text-xs text-gray-500 block">Category</span>
+                        <span class="text-gray-900 font-medium">{{ grievance.category or 'Not provided' }}</span>
+                    </div>
                     {% if grievance.description %}
                     <div>
-                        <span class="text-xs text-gray-250 block"></span>
+                        <span class="text-xs text-gray-500 block">Description</span>
                         <p class="grievance-description whitespace-pre-line font-sans font-normal">{{ grievance.description }}</p>
+                    </div>
+                    {% endif %}
+                    {% if grievance.admin_notes %}
+                    <div>
+                        <span class="text-xs text-gray-500 block">Staff remarks</span>
+                        <p class="whitespace-pre-line text-gray-900 font-medium">{{ grievance.admin_notes }}</p>
                     </div>
                     {% endif %}
                     <div>

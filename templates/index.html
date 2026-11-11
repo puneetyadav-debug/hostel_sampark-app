@@ -50,6 +50,22 @@
                 </select>
             </div>
             <div>
+                <label for="category" class="field-label mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    Issue category <span class="text-rose-500">*</span>
+                </label>
+                <select
+                    id="category"
+                    name="category"
+                    required
+                    class="text-field block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-3 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                >
+                    <option value="" disabled selected>Choose an issue category</option>
+                    {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <label for="description" class="field-label mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">
                     Detailed description <span class="text-rose-500">*</span>
                 </label>

@@ -230,6 +230,26 @@ html.dark .theme-icon-moon {
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15); 
   outline: none;
 }
+.password-field-wrap { position: relative; }
+.password-visibility-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: #64748b;
+  border-radius: 0.5rem;
+  transform: translateY(-50%);
+}
+.password-visibility-toggle:hover { color: var(--pine-dark); }
+.password-visibility-toggle:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+.password-visibility-toggle svg { width: 1.25rem; height: 1.25rem; }
+.password-eye-closed { display: none; }
+.password-visibility-toggle.is-visible .password-eye-open { display: none; }
+.password-visibility-toggle.is-visible .password-eye-closed { display: block; }
 
 .button-primary {
   color: #ffffff;
@@ -393,6 +413,11 @@ html.dark .theme-icon-moon {
   }
 }
 
+.ai-assistant-setting option {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
 /* Dark mode theme overrides */
 html.dark {
   color-scheme: dark;
@@ -407,6 +432,11 @@ html.dark {
   --rust: #f87171;
   --gold: #fbbf24;
   --soft-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .ai-assistant-setting option {
+  color: #f8fafc;
+  background-color: #1e293b;
 }
 
 html.dark,
@@ -531,3 +561,206 @@ html.dark .bg-white,
 html.dark .bg-slate-50 { background-color: #1e293b; }
 html.dark .border-slate-200,
 html.dark .border-gray-200 { border-color: #334155; }
+
+/* AI Chatbot Widget Styles */
+.chat-launcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.4), 0 4px 6px -2px rgba(5, 150, 105, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chat-launcher-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(5, 150, 105, 0.5);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+}
+
+#ai-chat-window.hidden {
+  display: none !important;
+}
+
+.chat-modal-box {
+  width: 380px;
+  max-width: calc(100vw - 2.5rem);
+  height: 500px;
+  max-height: calc(100vh - 8rem);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.chat-modal-header {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-chips-bar {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chat-action-chip {
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chat-action-chip:hover {
+  background-color: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+
+.chat-body-stream {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background-color: #ffffff;
+}
+
+.chat-bubble-user {
+  background-color: #059669;
+  color: #ffffff !important;
+  border-radius: 16px 16px 2px 16px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  max-width: 85%;
+  word-break: break-word;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+}
+
+.chat-bubble-ai {
+  background-color: #f1f5f9;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px 16px 16px 2px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8125rem;
+  max-width: 85%;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.chat-bottom-bar {
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-text-input {
+  flex: 1;
+  min-height: 2.75rem;
+  max-height: 6rem;
+  resize: vertical;
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+.chat-text-input::placeholder {
+  color: #94a3b8;
+}
+.chat-text-input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+}
+
+.chat-submit-btn {
+  background-color: #059669;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.chat-submit-btn:hover {
+  background-color: #047857;
+}
+
+/* Dark Mode Overrides for Chat Widget */
+html.dark .chat-modal-box {
+  background-color: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+html.dark .chat-chips-bar {
+  background-color: #0f172a;
+  border-bottom-color: #334155;
+}
+html.dark .chat-action-chip {
+  background-color: #1e293b;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+html.dark .chat-action-chip:hover {
+  background-color: #334155;
+  color: #34d399;
+  border-color: #10b981;
+}
+html.dark .chat-body-stream {
+  background-color: #0f172a;
+}
+html.dark .chat-bubble-ai {
+  background-color: #1e293b;
+  color: #f8fafc !important;
+  border-color: #334155;
+}
+html.dark .chat-bubble-user {
+  background-color: #059669;
+  color: #ffffff !important;
+}
+html.dark .chat-bottom-bar {
+  background-color: #1e293b;
+  border-top-color: #334155;
+}
+html.dark .chat-text-input {
+  background-color: #0f172a;
+  color: #f8fafc;
+  border-color: #475569;
+}
+html.dark .chat-text-input::placeholder {
+  color: #64748b;
+}
+html.dark .chat-text-input:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
+}

@@ -70,13 +70,20 @@ class TestApp(unittest.TestCase):
         with patch.object(hostel_app, "admin_database", database):
             response = self.client.post(
                 "/submit",
-                data={"title": "Broken light", "description": "The light is out."},
+                data={
+                    "title": "Broken light",
+                    "hostel": "Saramati",
+                    "category": "Electrical",
+                    "description": "The light is out.",
+                },
             )
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"123", response.data)
         self.assertIn("lookup_token_hash", database.last_query.inserted)
         self.assertEqual(database.last_query.inserted["title"], "Broken light")
+        self.assertEqual(database.last_query.inserted["hostel"], "Saramati")
+        self.assertEqual(database.last_query.inserted["category"], "Electrical")
         self.assertEqual(database.last_query.inserted["status"], "Pending")
 
     def test_wrong_private_code_does_not_show_grievance(self):
@@ -101,7 +108,7 @@ class TestApp(unittest.TestCase):
 
     def test_login_page_loads(self):
         response = self.client.get("/login")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
 
 if __name__ == "__main__":

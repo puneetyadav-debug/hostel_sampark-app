@@ -6,18 +6,23 @@ import hashlib
 import secrets
 from pathlib import Path
 from typing import Optional
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from groq import Groq
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"), override=False)
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
+groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
 logger = logging.getLogger(__name__)
 limiter = Limiter(
     app=app,
@@ -110,6 +115,7 @@ def home():
         "hostels": "Saramati, Aravali, Geetanjali",
         "announcement": "Welcome to Hostel Sampark!",
         "portal_open": "true",
+        "emergency_contacts": "",
     }
 
     if admin_database is not None:
@@ -154,6 +160,26 @@ def is_portal_open():
         # Keep submissions available if the status can't be checked.
         return True
 
+def is_ai_assistant_enabled():
+    """Check if the admin has enabled the AI assistant."""
+    if admin_database is None:
+        return True
+    try:
+        res = admin_database.table("app_settings").select("value").eq("key", "ai_assistant_enabled").limit(1).execute()
+        rows = res.data or []
+        if not rows:
+            return True
+        return rows[0]["value"].strip().lower() == "true"
+    except Exception:
+        return True
+
+@app.context_processor
+def inject_global_settings():
+    """Make ai_assistant_enabled automatically available to all HTML templates."""
+    return {
+        "ai_assistant_enabled": is_ai_assistant_enabled()
+    }
+
 def get_configured_hostels():
     default_hostels = ["Saramati", "Aravali", "Geetanjali"]
 
@@ -183,19 +209,204 @@ def get_configured_hostels():
     except Exception:
         logger.exception("Failed to load configured hostels")
         return default_hostels
+
+def get_configured_categories():
+    default_categories = ["Plumbing", "Electrical", "Internet", "Mess", "Furniture", "Cleanliness", "Pest Control", "Security", "Fees", "Interpersonal", "Ragging", "Others"]
+
+    if admin_database is None:
+        return default_categories
+
+    try:
+        result = (
+            admin_database.table("app_settings")
+            .select("value")
+            .eq("key", "categories")
+            .limit(1)
+            .execute()
+        )
+        rows = result.data or []
+        if not rows:
+            return default_categories
+
+        categories = [
+            name.strip()
+            for name in rows[0]["value"].split(",")
+            if name.strip()
+        ]
+        return categories or default_categories
+
+    except Exception:
+        logger.exception("Failed to load configured categories")
+        return default_categories
+
+def get_ai_system_prompt():
+    """Build the guardrail prompt with live hostel settings from the database."""
+    hostels_list = ", ".join(get_configured_hostels())
+    categories_list = ", ".join(get_configured_categories())
     
+    # Fetch emergency contacts from settings
+    emergency_contacts = "Check with hostel security desk."
+    if admin_database is not None:
+        try:
+            res = admin_database.table("app_settings").select("value").eq("key", "emergency_contacts").limit(1).execute()
+            if res.data and res.data[0]["value"].strip():
+                emergency_contacts = res.data[0]["value"].strip()
+        except Exception:
+            pass
+
+    return (
+        "You are 'Sampark Sahayak', the official AI assistant for Hostel Sampark.\n"
+        "Your sole job is to help hostel students with grievance submissions, maintenance procedures, and emergency contacts.\n"
+        f"Active Hostels: {hostels_list}\n"
+        f"Issue Categories: {categories_list}\n"
+        f"Emergency Contacts: {emergency_contacts}\n\n"
+        "STRICT GUARDRAILS:\n"
+        "1. Describe only features that currently exist in Hostel Sampark. Students can submit a grievance using the website's Submit form and track it using the Track page with their ticket ID and private code.\n"
+        "2. You cannot submit grievances, look up live grievance statuses, accept uploads, or send emails. Do not claim that you can.\n"
+        "3. Never invent website steps, apps, email addresses, phone numbers, contacts, policies, or response-time promises. Use only the settings listed above. If a detail is missing, say you do not have it and direct the student to the website or hostel administration.\n"
+        "4. Keep answers brief, polite, and easy to read on a small screen. Use short paragraphs or bullet points, with each item on a new line. Do not use tables.\n"
+        "5. For questions about homework, exams, coding, politics, general trivia, or creative writing, politely say: "
+        "'I am here only to assist with Hostel Sampark and student grievances.'"
+    )
+
+@app.route("/api/v1/config", methods=["GET"])
+@csrf_protection.exempt
+@limiter.limit("100 per minute")
+def api_config():
+    return jsonify({
+        "hostels": get_configured_hostels(),
+        "categories": get_configured_categories(),
+        "portal_open": is_portal_open(),
+        "ai_open": is_ai_assistant_enabled(),
+    })
+
+@app.route("/api/v1/submit", methods=["POST"])
+@csrf_protection.exempt
+@limiter.limit("100 per minute")
+def api_submit_grievance():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "Send a JSON object."}), 400
+
+    title = data.get("title", "")
+    description = data.get("description", "")
+    hostel = data.get("hostel", "")
+    category = data.get("category", "")
+
+    if not all(isinstance(value, str) for value in [title, description, hostel, category]):
+        return jsonify({"error": "All fields must be text."}), 400
+
+    title = title.strip()
+    description = description.strip()
+    hostel = hostel.strip()
+    category = category.strip()
+
+    if not is_portal_open():
+        return jsonify({"error": "Submissions are currently closed."}), 403
+    if hostel not in get_configured_hostels():
+        return jsonify({"error": "Choose a valid hostel."}), 400
+    if category not in get_configured_categories():
+        return jsonify({"error": "Choose a valid category."}), 400
+    if not title or len(title) > 150:
+        return jsonify({"error": "Title must be between 1 and 150 characters."}), 400
+    if not description or len(description) > 2000:
+        return jsonify({"error": "Description must be between 1 and 2000 characters."}), 400
+    if admin_database is None:
+        return jsonify({"error": "Submission storage is not configured."}), 503
+
+    lookup_code = secrets.token_urlsafe(32)
+    lookup_token_hash = hashlib.sha256(lookup_code.encode("utf-8")).hexdigest()
+
+    try:
+        result = admin_database.table("grievance").insert({
+            "title": title,
+            "description": description,
+            "hostel": hostel,
+            "category": category,
+            "status": "Pending",
+            "lookup_token_hash": lookup_token_hash,
+        }).execute()
+
+        grievance = result.data[0] if result.data else None
+        if grievance is None:
+            return jsonify({"error": "The complaint was saved, but no ticket ID was returned."}), 500
+
+        return jsonify({
+            "ticket_id": grievance["id"],
+            "lookup_code": lookup_code,
+        }), 201
+
+    except Exception:
+        logger.exception("API complaint submission failed")
+        return jsonify({"error": "Could not save the complaint."}), 500
+
+@app.route("/api/v1/status", methods=["POST"])
+@csrf_protection.exempt
+@limiter.limit("100 per minute")
+def api_grievance_status():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "Send a JSON object."}), 400
+
+    ticket_id = parse_ticket_id(data.get("ticket_id"))
+    lookup_code = data.get("lookup_code", "")
+
+    if ticket_id is None or not isinstance(lookup_code, str) or not lookup_code.strip():
+        return jsonify({"error": "A valid ticket_id and lookup_code are required."}), 400
+
+    if admin_database is None:
+        return jsonify({"error": "Complaint lookup is not configured."}), 503
+
+    lookup_token_hash = hashlib.sha256(
+        lookup_code.strip().encode("utf-8")
+    ).hexdigest()
+
+    try:
+        result = (
+            admin_database.table("grievance")
+            .select("status, admin_notes")
+            .eq("id", ticket_id)
+            .eq("lookup_token_hash", lookup_token_hash)
+            .limit(1)
+            .execute()
+        )
+
+        grievance = result.data[0] if result.data else None
+        if grievance is None:
+            return jsonify({"error": "No complaint found for those details."}), 404
+
+        return jsonify({
+            "ticket_id": ticket_id,
+            "status": grievance.get("status"),
+            "admin_remarks": grievance.get("admin_notes") or "",
+        })
+
+    except Exception:
+        logger.exception("API complaint status lookup failed")
+        return jsonify({"error": "Could not look up the complaint."}), 500
+
 @app.route("/submit", methods=["GET", "POST"])
 def submit_grievance():
     if not is_portal_open():
         flash("Grievance submissions are currently closed.", "error")
         return redirect(url_for("home"))
     if request.method == "GET":
-        return render_template("index.html",hostels=get_configured_hostels())
+        return render_template(
+            "index.html",
+            hostels=get_configured_hostels(),
+            categories=get_configured_categories(),
+        )
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
     hostel = request.form.get("hostel", "").strip()
+    category = request.form.get("category", "").strip()
     if hostel not in get_configured_hostels():
         flash("Choose a valid hostel from the list.", "error")
+        return redirect(url_for("submit_grievance"))
+    if category not in get_configured_categories():
+        flash("Choose a valid issue category from the list.", "error")
         return redirect(url_for("submit_grievance"))
     # Input validation: length limits for both title and description
     if not title or len(title) > 150:
@@ -217,7 +428,9 @@ def submit_grievance():
     
     data = {
         "title": title,
+        "hostel": hostel,
         "description": description,
+        "category": category,
         "status": "Pending",
         "lookup_token_hash": lookup_token_hash,
     }
@@ -263,7 +476,7 @@ def grievance_status():
             try:
                 database_result = (
                     admin_database.table("grievance")
-                    .select("id, title, description, status, created_at, updated_at")
+                    .select("id, title, hostel, description, category, admin_notes, status, created_at, updated_at")
                     .eq("id", ticket_id)
                     .eq("lookup_token_hash", lookup_token_hash)
                     .limit(1)
@@ -326,7 +539,7 @@ def admin():
             offset = (page - 1) * ADMIN_PAGE_SIZE
             database_result = (
                 admin_database.table("grievance")
-                .select("id, title, description, status, created_at, updated_at")
+                .select("id, title, hostel, description, category, admin_notes, status, created_at, updated_at")
                 .order("created_at", desc=True)
                 .order("id", desc=True)
                 .range(offset, offset + ADMIN_PAGE_SIZE)
@@ -357,7 +570,7 @@ def admin_settings():
         flash("Admin settings need SUPABASE_SECRET_KEY configured on the server.", "error")
         return redirect(url_for("admin"))
 
-    setting_keys = ("hostels", "announcement", "portal_open")
+    setting_keys = ("hostels", "announcement", "portal_open", "categories", "emergency_contacts", "ai_assistant_enabled")
 
     try:
         if request.method == "POST":
@@ -366,13 +579,22 @@ def admin_settings():
                 "hostels": request.form.get("hostels", "").strip(),
                 "announcement": request.form.get("announcement", "").strip(),
                 "portal_open": "true" if request.form.get("portal_open") == "true" else "false",
+                "categories": request.form.get("categories", "").strip(),
+                "emergency_contacts": request.form.get("emergency_contacts", "").strip(),
+                "ai_assistant_enabled": "true" if request.form.get("ai_assistant_enabled") == "true" else "false",
             }
 
-            # Update each existing setting row in Supabase.
+            # Upsert each setting row in Supabase so missing keys are created automatically.
+            now_iso = datetime.now(timezone.utc).isoformat()
             for key in setting_keys:
-                admin_database.table("app_settings").update(
-                    {"value": values[key], "updated_at": datetime.now(timezone.utc).isoformat()}
-                ).eq("key", key).execute()
+                admin_database.table("app_settings").upsert(
+                    {
+                        "key": key,
+                        "value": values[key],
+                        "updated_at": now_iso,
+                    },
+                    on_conflict="key",
+                ).execute()
 
             flash("Settings updated successfully!", "success")
             return redirect(url_for("admin_settings"))
@@ -389,6 +611,12 @@ def admin_settings():
         settings.setdefault("hostels", "")
         settings.setdefault("announcement", "")
         settings.setdefault("portal_open", "true")
+        settings.setdefault("emergency_contacts", "")
+        settings.setdefault(
+            "categories",
+            "Plumbing, Electrical, Internet, Mess, Furniture, Cleanliness, Pest Control, Security, Fees, Interpersonal, Ragging, Others",
+        )
+        settings.setdefault("ai_assistant_enabled", "true")
 
         return render_template("admin_settings.html", settings=settings)
 
@@ -404,6 +632,7 @@ def update_status():
 
     ticket_id = parse_ticket_id(request.form.get("ticket_id"))
     new_status = request.form.get("new_status", "").strip()
+    admin_notes = request.form.get("admin_notes", "").strip()
     page = request.form.get("page", default=1, type=int) or 1
     page = min(max(page, 1), 1_000_000)
 
@@ -416,6 +645,10 @@ def update_status():
         flash("Choose a valid grievance status.", "error")
         return redirect(url_for("admin", page=page))
 
+    if len(admin_notes) > 1000:
+        flash("Staff remarks must be 1000 characters or fewer.", "error")
+        return redirect(url_for("admin", page=page))
+
     if admin_database is None:
         flash("Status updates need SUPABASE_SECRET_KEY configured on the server.", "error")
         return redirect(url_for("admin", page=page))
@@ -423,7 +656,11 @@ def update_status():
     try:
         database_result = (
             admin_database.table("grievance")
-            .update({"status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()})
+            .update({
+                "status": new_status,
+                "admin_notes": admin_notes,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            })
             .eq("id", ticket_id)
             .select("id")
             .execute()
@@ -475,6 +712,40 @@ def delete_grievance():
 
     return redirect(url_for("admin", page=page))
 
+@app.route("/api/chat", methods=["POST"])
+@csrf_protection.exempt
+@limiter.limit("100 per minute")
+def api_chat():
+    if groq_client is None:
+        return jsonify({"error": "AI Assistant is not configured on the server."}), 503
+
+    if not is_ai_assistant_enabled():
+        return jsonify({"error": "AI Assistant is not enabled."}), 403
+
+    data = request.get_json(silent=True) or {}
+    user_message = data.get("message", "").strip()
+
+    if not user_message:
+        return jsonify({"error": "Please type a message."}), 400
+
+    if len(user_message) > 500:
+        return jsonify({"error": "Message is too long (maximum 500 characters)."}), 400
+
+    try:
+        response = groq_client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[
+                {"role": "system", "content": get_ai_system_prompt()},
+                {"role": "user", "content": user_message},
+            ],
+            max_tokens=600,
+        )
+        reply = response.choices[0].message.content
+        return jsonify({"reply": reply})
+
+    except Exception:
+        logger.exception("Failed to generate AI response")
+        return jsonify({"error": "AI assistant is temporarily unavailable. Please try again shortly."}), 500
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "").lower() in {"1", "true", "yes"})

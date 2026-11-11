@@ -5,3 +5,4 @@ supabase
 gunicorn
 Flask-Limiter
 tzdata
+flask-cors

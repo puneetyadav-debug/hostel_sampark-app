@@ -37,10 +37,10 @@
             </a>
             <nav aria-label="Main navigation" class="site-nav flex flex-wrap items-center gap-1 text-sm font-medium sm:gap-2">
                 {% if session.get('admin_logged_in') %}
-                    <a href="{{ url_for('home') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">Home</a>
-                    <a href="{{ url_for('admin') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">Dashboard</a>
+                    <a href="{{ url_for('home') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'home' %}is-current{% endif %}" {% if request.endpoint == 'home' %}aria-current="page"{% endif %}>Home</a>
+                    <a href="{{ url_for('admin') }}" class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'admin' %}is-current{% endif %}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}>Dashboard</a>
                     <a href="{{ url_for('admin_settings') }}"
-                        class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'admin_settings' %}is-current{% endif %}">
+                        class="nav-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 {% if request.endpoint == 'admin_settings' %}is-current{% endif %}" {% if request.endpoint == 'admin_settings' %}aria-current="page"{% endif %}>
                         Settings        
                     </a>
                     <form action="{{ url_for('logout') }}" method="POST" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="nav-link signout-link rounded-lg px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-rose-500">Sign out</button></form>
@@ -84,6 +84,14 @@
         {% block content %}{% endblock %}
     </main>
     <footer class="site-footer {% if request.endpoint in ['home', 'grievance_status', 'login'] %}mt-4{% else %}mt-12{% endif %} border-t">
+        {% if request.endpoint == 'home' and settings and settings.emergency_contacts %}
+        <div class="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
+            <section class="content-card rounded-2xl border p-5 sm:p-6" aria-labelledby="emergency-contacts-title">
+                <h2 id="emergency-contacts-title" class="text-sm font-bold text-slate-900 dark:text-white">Emergency / Helpdesk Contacts</h2>
+                <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">{{ settings.emergency_contacts }}</p>
+            </section>
+        </div>
+        {% endif %}
         <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-center text-xs text-slate-500 sm:flex-row sm:px-6 sm:text-left lg:px-8">
             <span>Hostel Sampark • Grievance Redressal Portal</span><span>© {{ 2026 }} • A better hostel starts with your voice.</span>
         </div>
@@ -112,5 +120,226 @@
         updateThemeButton();
     });
 </script>
+{% if ai_assistant_enabled %}
+<!-- Floating AI Chat Widget -->
+<div id="ai-chat-container" class="fixed bottom-6 right-6 z-50 font-sans">
+    <!-- Chat Toggle Button (The Pill Badge) -->
+    <button id="ai-chat-toggle" type="button" class="chat-launcher-btn" aria-label="Open AI Assistant">
+        <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+        <svg id="ai-icon-open" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a.75.75 0 0 1-.974-.974 5.96 5.96 0 0 1 1.057-4.035C4.03 14.556 3 13.33 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"/></svg>
+        <svg id="ai-icon-close" class="hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        <span id="ai-toggle-text">Need Help? Ask Mitra</span>
+    </button>
+
+    <!-- Chat Window (Opens when clicked) -->
+    <div id="ai-chat-window" class="hidden absolute bottom-16 right-0 chat-modal-box">
+        <!-- Header -->
+        <div class="chat-modal-header">
+            <div class="flex items-center gap-2">
+                <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                <div>
+                    <h3 class="text-sm font-bold leading-tight text-white">Hostel Sampark Mitra</h3>
+                    <p class="text-[10px] text-emerald-100">Hostel AI Assistant</p>
+                </div>
+            </div>
+            <button id="ai-close-btn" type="button" class="text-white hover:text-emerald-200 text-xl font-bold p-1 cursor-pointer leading-none" aria-label="Close chat">&times;</button>
+        </div>
+
+        <!-- Quick Questions Chips -->
+        <div class="chat-chips-bar">
+            <button type="button" class="chat-action-chip ai-chip">🚨 Emergency contacts</button>
+            <button type="button" class="chat-action-chip ai-chip">📝 How to file a complaint</button>
+            <button type="button" class="chat-action-chip ai-chip">🔍 How to track</button>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="ai-messages" class="chat-body-stream space-y-3 text-xs leading-relaxed">
+            <div class="flex gap-2 items-start">
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] dark:bg-emerald-950 dark:text-emerald-300 mt-0.5">AI</div>
+                <div class="chat-bubble-ai">
+                    Hello! I'm Sampark Sahayak. Ask me any question about your hostel grievances, room repairs, or emergency contacts!
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Box -->
+        <form id="ai-chat-form" class="chat-bottom-bar">
+            <textarea id="ai-input" rows="2" placeholder="Type a hostel question..." required maxlength="300" autocomplete="off" class="chat-text-input"></textarea>
+            <button type="submit" class="chat-submit-btn" aria-label="Send message">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/></svg>
+            </button>
+        </form>
+    </div>
+</div>
+<script>
+    const chatToggle = document.getElementById("ai-chat-toggle");
+    const chatWindow = document.getElementById("ai-chat-window");
+    const closeBtn = document.getElementById("ai-close-btn");
+    const iconOpen = document.getElementById("ai-icon-open");
+    const iconClose = document.getElementById("ai-icon-close");
+    const toggleText = document.getElementById("ai-toggle-text");
+    const chatForm = document.getElementById("ai-chat-form");
+    const chatInput = document.getElementById("ai-input");
+    const messagesBox = document.getElementById("ai-messages");
+
+    function appendInlineText(element, text) {
+        const boldPattern = /\*\*(.+?)\*\*/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = boldPattern.exec(text)) !== null) {
+            element.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+            const boldText = document.createElement("strong");
+            boldText.textContent = match[1];
+            element.appendChild(boldText);
+            lastIndex = boldPattern.lastIndex;
+        }
+
+        element.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+
+    function getTableCells(line) {
+        return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(cell => cell.trim());
+    }
+
+    function appendFormattedText(element, text) {
+        const lines = text.split(/\r?\n/);
+        const separatorCell = /^:?-{3,}:?$/;
+
+        for (let i = 0; i < lines.length; i += 1) {
+            const isTable = lines[i].includes("|") && lines[i + 1]
+                && getTableCells(lines[i + 1]).every(cell => separatorCell.test(cell));
+
+            if (isTable) {
+                const headers = getTableCells(lines[i]);
+                const tableCards = document.createElement("div");
+                tableCards.className = "my-2 space-y-2";
+                i += 2;
+
+                while (i < lines.length && lines[i].includes("|")) {
+                    const values = getTableCells(lines[i]);
+                    const card = document.createElement("div");
+                    card.className = "rounded-lg border border-slate-300/70 bg-white/50 p-2 dark:border-slate-600 dark:bg-slate-900/40";
+
+                    values.forEach((value, cellIndex) => {
+                        if (!value) return;
+                        const row = document.createElement("div");
+                        row.className = "mb-1 last:mb-0";
+                        const label = document.createElement("strong");
+                        label.textContent = `${headers[cellIndex] || "Details"}: `;
+                        row.appendChild(label);
+                        appendInlineText(row, value);
+                        card.appendChild(row);
+                    });
+
+                    tableCards.appendChild(card);
+                    i += 1;
+                }
+
+                element.appendChild(tableCards);
+                i -= 1;
+                continue;
+            }
+
+            appendInlineText(element, lines[i]);
+            if (i < lines.length - 1) element.appendChild(document.createElement("br"));
+        }
+    }
+
+    function toggleChat(forceClose = false) {
+        const shouldClose = forceClose || !chatWindow.classList.contains("hidden");
+        if (shouldClose) {
+            chatWindow.classList.add("hidden");
+            iconOpen.classList.remove("hidden");
+            iconClose.classList.add("hidden");
+            if (toggleText) toggleText.textContent = "Need Help? Ask AI";
+        } else {
+            chatWindow.classList.remove("hidden");
+            iconOpen.classList.add("hidden");
+            iconClose.classList.remove("hidden");
+            if (toggleText) toggleText.textContent = "Close Chat";
+            chatInput.focus();
+        }
+    }
+
+    chatToggle?.addEventListener("click", () => toggleChat());
+    closeBtn?.addEventListener("click", () => toggleChat(true));
+
+    // Close when pressing the Escape key
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !chatWindow.classList.contains("hidden")) {
+            toggleChat(true);
+        }
+    });
+
+    function appendMessage(text, isUser = false) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = isUser ? "flex justify-end" : "flex gap-2 items-start";
+        
+        const bubble = document.createElement("div");
+        bubble.className = isUser ? "chat-bubble-user" : "chat-bubble-ai";
+        if (isUser) {
+            bubble.textContent = text;
+        } else {
+            appendFormattedText(bubble, text);
+        }
+
+        if (!isUser) {
+            const avatar = document.createElement("div");
+            avatar.className = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] dark:bg-emerald-950 dark:text-emerald-300 mt-0.5";
+            avatar.textContent = "AI";
+            msgDiv.appendChild(avatar);
+        }
+        msgDiv.appendChild(bubble);
+        messagesBox.appendChild(msgDiv);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    async function sendQuestion(text) {
+        if (!text.trim()) return;
+        appendMessage(text, true);
+        chatInput.value = "";
+        
+        // Add temporary typing indicator
+        const typingDiv = document.createElement("div");
+        typingDiv.id = "ai-typing";
+        typingDiv.className = "text-[11px] text-slate-400 italic px-8";
+        typingDiv.textContent = "Assistant is typing...";
+        messagesBox.appendChild(typingDiv);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await res.json();
+            document.getElementById("ai-typing")?.remove();
+            appendMessage(data.reply || data.error || "Sorry, I could not process that.");
+        } catch {
+            document.getElementById("ai-typing")?.remove();
+            appendMessage("Unable to reach assistant. Please try again.");
+        }
+    }
+
+    chatForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        sendQuestion(chatInput.value);
+    });
+
+    chatInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.requestSubmit();
+        }
+    });
+
+    // Quick chips click
+    document.querySelectorAll(".ai-chip").forEach(btn => {
+        btn.addEventListener("click", () => sendQuestion(btn.textContent.trim()));
+    });
+</script>
+{% endif %}
 </body>
 </html>
